@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CucurbitAI — Leaf Disease Detection</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#080f08;
+  --ink2:#1a2b1a;
+  --sage:#3d5c3d;
+  --leaf:#4a8c4a;
+  --lime:#7dcf5a;
+  --mint:#b8f0a0;
+  --cream:#f6f4ee;
+  --paper:#faf9f5;
+  --sky:#e8f4e8;
+  --glass:rgba(250,249,245,0.72);
+  --glass2:rgba(255,255,255,0.88);
+  --border:rgba(74,140,74,0.22);
+  --border2:rgba(74,140,74,0.42);
+  --display:'Bebas Neue',sans-serif;
+  --body:'Outfit',sans-serif;
+  --mono:'DM Mono',monospace;
+  --r-md:16px; --r-lg:24px; --r-xl:32px;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--body);background:var(--paper);color:var(--ink);min-height:100vh;overflow-x:hidden}
+
+.scene{
+  position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse 70% 60% at 15% 10%,rgba(120,200,80,0.12) 0%,transparent 70%),
+    radial-gradient(ellipse 50% 50% at 85% 80%,rgba(61,92,61,0.10) 0%,transparent 70%),
+    #f3f5ef;
+}
+.scene::after{
+  content:'';position:absolute;inset:0;
+  background-image:linear-gradient(rgba(74,140,74,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(74,140,74,0.05) 1px,transparent 1px);
+  background-size:48px 48px;
+}
+.blob{position:fixed;border-radius:50%;filter:blur(80px);pointer-events:none;z-index:0;animation:drift 20s ease-in-out infinite alternate}
+.blob1{width:600px;height:600px;background:radial-gradient(circle,rgba(125,207,90,0.10) 0%,transparent 70%);top:-200px;left:-150px;animation-duration:25s}
+.blob2{width:500px;height:500px;background:radial-gradient(circle,rgba(61,92,61,0.09) 0%,transparent 70%);bottom:-100px;right:-100px;animation-duration:30s;animation-delay:-10s}
+.blob3{width:400px;height:400px;background:radial-gradient(circle,rgba(184,240,160,0.08) 0%,transparent 70%);top:40%;left:60%;animation-duration:22s;animation-delay:-5s}
+@keyframes drift{0%{transform:translate(0,0) scale(1)}100%{transform:translate(40px,30px) scale(1.08)}}
+
+.wrapper{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding:0 28px}
+
+.topbar{
+  position:sticky;top:0;z-index:100;
+  background:rgba(243,245,239,0.85);
+  backdrop-filter:blur(24px) saturate(180%);
+  border-bottom:1px solid var(--border);
+}
+.topbar-inner{
+  max-width:1000px;margin:0 auto;padding:0 28px;
+  height:70px;display:flex;align-items:center;gap:20px;
+}
+.brand{display:flex;align-items:center;gap:12px;text-decoration:none}
+.brand-mark{
+  width:44px;height:44px;
+  background:linear-gradient(135deg,var(--leaf),var(--lime));
+  border-radius:12px;display:grid;place-items:center;
+  box-shadow:0 4px 16px rgba(74,140,74,0.35);flex-shrink:0;
+}
+.brand-mark svg{width:24px;height:24px;fill:white}
+.brand-name{font-family:var(--display);font-size:1.9rem;letter-spacing:1px;color:var(--ink);line-height:1}
+.brand-dot{color:var(--lime)}
+.topbar-sep{flex:1}
+.status-badge{
+  display:flex;align-items:center;gap:9px;
+  padding:9px 20px;
+  background:var(--glass2);
+  border:1.5px solid var(--border2);
+  border-radius:100px;
+  font-size:1rem;font-weight:600;color:var(--sage);
+  box-shadow:0 2px 12px rgba(74,140,74,0.08);
+}
+.pulse-ring{position:relative;width:10px;height:10px;flex-shrink:0}
+.pulse-ring::before,.pulse-ring::after{content:'';position:absolute;inset:0;border-radius:50%;background:var(--sage)}
+.pulse-ring::after{animation:ping 2s cubic-bezier(0,0,.2,1) infinite;background:rgba(74,140,74,0.4)}
+.pulse-ring.live::before{background:var(--lime)}
+.pulse-ring.live::after{background:rgba(125,207,90,0.5)}
+@keyframes ping{75%,100%{transform:scale(2.5);opacity:0}}
+
+.hero{
+  padding:64px 0 44px;
+  display:grid;grid-template-columns:1fr auto;align-items:end;gap:40px;
+  border-bottom:1px solid var(--border);margin-bottom:48px;
+}
+@media(max-width:680px){.hero{grid-template-columns:1fr;padding:40px 0 28px}}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:7px 18px;background:rgba(125,207,90,0.15);
+  border:1.5px solid rgba(125,207,90,0.4);border-radius:100px;
+  font-size:1rem;font-weight:700;color:var(--leaf);letter-spacing:.5px;margin-bottom:20px;
+}
+.hero-eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--lime);box-shadow:0 0 8px var(--lime)}
+.hero h1{
+  font-family:var(--display);
+  font-size:clamp(3.6rem,7vw,6.2rem);
+  line-height:0.92;letter-spacing:1px;color:var(--ink);margin-bottom:22px;
+}
+.hero h1 .accent{-webkit-text-stroke:2.5px var(--leaf);color:transparent}
+.hero-desc{font-size:1.2rem;font-weight:400;color:var(--sage);line-height:1.7;max-width:520px}
+.hero-tags{display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+@media(max-width:680px){.hero-tags{flex-direction:row;flex-wrap:wrap;align-items:flex-start}}
+.model-tag{
+  display:flex;align-items:center;gap:8px;padding:10px 20px;
+  background:var(--glass2);border:1.5px solid var(--border2);border-radius:12px;
+  font-size:1rem;font-weight:700;color:var(--ink2);white-space:nowrap;
+  box-shadow:0 2px 12px rgba(0,0,0,0.04);backdrop-filter:blur(10px);
+}
+.model-tag .ti{font-size:1.15rem}
+
+.card{
+  background:var(--glass2);border:1.5px solid var(--border);border-radius:var(--r-xl);padding:40px;
+  backdrop-filter:blur(20px) saturate(150%);
+  box-shadow:0 1px 0 rgba(255,255,255,0.9) inset,0 20px 60px rgba(61,92,61,0.10),0 4px 16px rgba(0,0,0,0.04);
+  transition:box-shadow .3s ease;margin-bottom:24px;animation:fadeUp .5s ease both;
+}
+.card:hover{box-shadow:0 1px 0 rgba(255,255,255,0.9) inset,0 28px 80px rgba(61,92,61,0.14),0 6px 24px rgba(0,0,0,0.06)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:640px){.card{padding:24px 20px;border-radius:var(--r-lg)}}
+.card-header{display:flex;align-items:center;gap:14px;margin-bottom:28px}
+.card-icon{
+  width:48px;height:48px;background:linear-gradient(135deg,var(--leaf),var(--lime));
+  border-radius:14px;display:grid;place-items:center;font-size:1.4rem;
+  box-shadow:0 4px 14px rgba(74,140,74,0.3);flex-shrink:0;
+}
+.card-title{font-family:var(--display);font-size:1.85rem;letter-spacing:.5px;color:var(--ink)}
+.card-sub{font-size:1.05rem;color:var(--sage);font-weight:400;margin-top:2px}
+
+#drop-zone{
+  position:relative;
+  border:2.5px dashed rgba(74,140,74,0.35);
+  border-radius:var(--r-lg);padding:72px 40px;text-align:center;cursor:pointer;
+  background:radial-gradient(ellipse 60% 50% at 50% 0%,rgba(125,207,90,0.08) 0%,transparent 70%),var(--sky);
+  transition:all .25s ease;overflow:hidden;
+}
+#drop-zone::before{
+  content:'';position:absolute;inset:0;
+  background-image:radial-gradient(circle at 20% 80%,rgba(125,207,90,0.06) 0%,transparent 50%),
+    radial-gradient(circle at 80% 20%,rgba(61,92,61,0.05) 0%,transparent 50%);
+  pointer-events:none;
+}
+#drop-zone:hover,#drop-zone.drag-over{
+  border-color:var(--leaf);border-style:solid;
+  background:radial-gradient(ellipse 60% 50% at 50% 0%,rgba(125,207,90,0.16) 0%,transparent 70%),#edf7ed;
+  transform:scale(1.005);
+  box-shadow:0 0 0 5px rgba(125,207,90,0.14),0 8px 32px rgba(74,140,74,0.12);
+}
+.upload-icon{
+  width:96px;height:96px;
+  background:linear-gradient(145deg,white,#edf7ed);
+  border:2px solid rgba(74,140,74,0.25);border-radius:28px;
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 26px;font-size:3rem;
+  box-shadow:0 8px 28px rgba(74,140,74,0.15),0 2px 8px rgba(0,0,0,0.06);
+  transition:transform .25s ease,box-shadow .25s ease;
+}
+#drop-zone:hover .upload-icon{transform:translateY(-6px) scale(1.06);box-shadow:0 16px 40px rgba(74,140,74,0.22)}
+#drop-zone h3{font-size:1.55rem;font-weight:800;color:var(--ink);margin-bottom:10px;letter-spacing:-.2px}
+#drop-zone p{font-size:1.1rem;color:var(--sage);line-height:1.75;font-weight:500}
+#drop-zone strong{color:var(--leaf);font-weight:800;text-decoration:underline;text-underline-offset:3px}
+.fmt-row{display:flex;gap:8px;justify-content:center;margin-top:20px;flex-wrap:wrap}
+.fmt-chip{
+  padding:7px 18px;background:white;border:1.5px solid rgba(74,140,74,0.28);
+  border-radius:100px;font-family:var(--mono);font-size:0.92rem;font-weight:500;color:var(--leaf);
+  box-shadow:0 2px 6px rgba(74,140,74,0.08);
+}
+#file-input{display:none}
+
+#preview-wrap{display:none;margin-top:24px}
+#preview-img{
+  width:100%;max-height:380px;object-fit:contain;
+  border-radius:var(--r-md);border:1.5px solid var(--border2);
+  background:linear-gradient(135deg,#f4f8f4,#fefef8);
+  box-shadow:0 8px 32px rgba(0,0,0,0.08);
+}
+.file-meta{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-top:14px;padding:13px 20px;
+  background:rgba(255,255,255,0.85);border:1.5px solid var(--border);border-radius:12px;
+  font-size:1rem;font-weight:600;color:var(--sage);
+}
+
+#error-box{
+  display:none;align-items:center;gap:12px;margin-top:18px;
+  padding:16px 20px;background:#fff1f1;border:1.5px solid #fca5a5;
+  border-radius:12px;font-size:1.05rem;font-weight:600;color:#b91c1c;
+}
+
+#analyse-btn{
+  position:relative;width:100%;margin-top:24px;padding:21px 32px;
+  background:linear-gradient(135deg,#2d6a2d 0%,var(--leaf) 50%,#5aaa3a 100%);
+  background-size:200% auto;color:white;border:none;border-radius:var(--r-md);
+  font-family:var(--display);font-size:1.7rem;letter-spacing:1.5px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:12px;
+  box-shadow:0 1px 0 rgba(255,255,255,0.2) inset,0 8px 28px rgba(46,106,46,0.45);
+  transition:all .25s ease;overflow:hidden;
+}
+#analyse-btn::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,0.12) 0%,transparent 60%);pointer-events:none;
+}
+#analyse-btn:hover:not(:disabled){
+  background-position:right center;
+  box-shadow:0 1px 0 rgba(255,255,255,0.2) inset,0 14px 40px rgba(46,106,46,0.55);
+  transform:translateY(-3px);
+}
+#analyse-btn:active{transform:scale(.987);transition-duration:.08s}
+#analyse-btn:disabled{opacity:.38;cursor:not-allowed;transform:none;box-shadow:none}
+.spinner{
+  display:none;width:22px;height:22px;
+  border:3px solid rgba(255,255,255,0.3);border-top-color:white;
+  border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+#reset-btn{
+  display:none;width:100%;margin-top:12px;padding:15px;
+  background:transparent;border:1.5px solid var(--border2);
+  color:var(--sage);border-radius:12px;
+  font-family:var(--body);font-size:1.05rem;font-weight:700;cursor:pointer;
+  transition:all .2s ease;
+}
+#reset-btn:hover{border-color:var(--leaf);color:var(--leaf);background:rgba(74,140,74,0.04)}
+
+#results{display:none}
+
+.dx-banner{
+  position:relative;border-radius:var(--r-lg);padding:32px 36px;margin-bottom:28px;
+  overflow:hidden;border:1.5px solid var(--border2);
+}
+.dx-banner-bg{
+  position:absolute;inset:0;z-index:0;
+  background:linear-gradient(135deg,#edf7ed 0%,#fef9e7 60%,#edf7ed 100%);
+}
+.dx-banner-bg::after{
+  content:'';position:absolute;inset:0;
+  background-image:radial-gradient(circle at 90% 10%,rgba(125,207,90,0.15) 0%,transparent 50%),
+    radial-gradient(circle at 10% 90%,rgba(74,140,74,0.08) 0%,transparent 50%);
+}
+.dx-banner>*{position:relative;z-index:1}
+.dx-top{display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap;margin-bottom:16px}
+.dx-emoji{
+  width:76px;height:76px;border-radius:22px;
+  display:grid;place-items:center;font-size:2.6rem;flex-shrink:0;
+  box-shadow:0 6px 20px rgba(0,0,0,0.12);border:1.5px solid rgba(255,255,255,0.8);
+}
+.dx-title-block{flex:1;min-width:200px}
+.dx-label{font-size:0.92rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--sage);margin-bottom:6px}
+.dx-name{font-family:var(--display);font-size:clamp(1.9rem,4vw,2.7rem);letter-spacing:.5px;color:var(--ink);line-height:1.1}
+.dx-raw{font-family:var(--mono);font-size:1rem;color:var(--sage);margin-top:6px}
+.dx-chips{display:flex;gap:10px;flex-wrap:wrap;margin-left:auto;align-items:flex-start}
+.dx-chip{padding:9px 20px;border-radius:100px;font-size:1rem;font-weight:700;border:2px solid;backdrop-filter:blur(8px)}
+.chip-crop-gourd{background:rgba(220,252,231,0.9);color:#166534;border-color:#86efac}
+.chip-crop-pumpkin{background:rgba(255,237,213,0.9);color:#9a3412;border-color:#fdba74}
+.chip-severity{background:rgba(255,255,255,0.85)}
+
+.conf-block{margin-bottom:28px}
+.conf-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
+.conf-label-txt{font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--sage)}
+.conf-number{font-family:var(--display);font-size:3.2rem;line-height:1;letter-spacing:-1px}
+.conf-track{
+  height:14px;background:#e8f0e8;border-radius:100px;overflow:hidden;
+  border:1.5px solid rgba(74,140,74,0.2);box-shadow:inset 0 2px 4px rgba(0,0,0,0.06);
+}
+.conf-fill{
+  height:100%;border-radius:100px;width:0;
+  transition:width 1.4s cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden;
+}
+.conf-fill::after{
+  content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.4),transparent);
+  animation:shimmer 2s ease infinite;animation-delay:1.5s;
+}
+@keyframes shimmer{to{left:200%}}
+
+.tile-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:28px}
+@media(max-width:560px){.tile-grid{grid-template-columns:1fr}}
+.tile{
+  background:white;border:1.5px solid var(--border);border-radius:var(--r-md);padding:22px;
+  transition:all .2s ease;
+}
+.tile:hover{border-color:var(--border2);transform:translateY(-3px);box-shadow:0 8px 24px rgba(74,140,74,0.10)}
+.tile.full{grid-column:1/-1}
+.tile-label{
+  display:flex;align-items:center;gap:8px;
+  font-size:0.9rem;font-weight:800;text-transform:uppercase;letter-spacing:1.3px;color:var(--sage);margin-bottom:12px;
+}
+.tile-label-icon{
+  width:30px;height:30px;background:var(--sky);border:1.5px solid var(--border2);
+  border-radius:8px;display:grid;place-items:center;font-size:1rem;
+}
+.tile-value{font-size:1.05rem;color:var(--ink2);line-height:1.7;font-weight:500}
+
+.hr{height:1.5px;background:linear-gradient(90deg,transparent,var(--border2),transparent);margin:28px 0}
+
+.top5-header{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.top5-title{font-family:var(--display);font-size:1.7rem;letter-spacing:.5px;color:var(--ink)}
+.top5-sub{font-size:1rem;font-weight:500;color:var(--sage);margin-left:auto}
+.top5-list{display:flex;flex-direction:column;gap:10px}
+.top5-row{
+  display:flex;align-items:center;gap:14px;padding:16px 20px;
+  border-radius:var(--r-md);background:white;border:1.5px solid var(--border);
+  transition:all .2s ease;cursor:default;
+}
+.top5-row:hover{border-color:var(--border2);transform:translateX(6px);box-shadow:0 4px 16px rgba(74,140,74,0.10)}
+.top5-row.rank1{background:linear-gradient(135deg,#edf7ed,#fefce8);border-color:rgba(125,207,90,0.5);box-shadow:0 4px 18px rgba(125,207,90,0.14)}
+.rank-num{
+  width:34px;height:34px;border-radius:10px;display:grid;place-items:center;
+  font-size:1rem;font-weight:900;flex-shrink:0;font-family:var(--mono);
+}
+.r1{background:linear-gradient(135deg,#fbbf24,#f59e0b);color:white;box-shadow:0 3px 10px rgba(245,158,11,0.4)}
+.r2{background:linear-gradient(135deg,#cbd5e1,#94a3b8);color:white}
+.r3{background:linear-gradient(135deg,#fb923c,#ea580c);color:white}
+.rn{background:#f1f5f9;color:#94a3b8;border:1.5px solid #e2e8f0}
+.t5-name{font-size:1.05rem;font-weight:700;color:var(--ink2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.t5-bar{height:7px;background:#e8f0e8;border-radius:100px;overflow:hidden;width:100px;flex-shrink:0}
+.t5-fill{height:100%;border-radius:100px;background:linear-gradient(90deg,#7dcf5a,#4a8c4a);transition:width .9s ease}
+.t5-pct{font-family:var(--mono);font-size:1rem;font-weight:600;color:var(--leaf);min-width:62px;text-align:right;flex-shrink:0}
+@media(max-width:500px){.t5-bar{display:none}.t5-name{font-size:.95rem}}
+
+footer{
+  position:relative;z-index:1;text-align:center;padding:28px;margin-top:12px;
+  border-top:1px solid var(--border);font-size:1rem;font-weight:500;color:var(--sage);
+}
+footer strong{color:var(--leaf);font-weight:700}
+</style>
+</head>
+<body>
+
+<div class="scene"></div>
+<div class="blob blob1"></div>
+<div class="blob blob2"></div>
+<div class="blob blob3"></div>
+
+<nav class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="/">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M17 8C8 10 5.9 16.17 3.82 19.99 2.71 22 1 22 1 22c0 0 5-1 7-5 0 0-3 1-5-1 8-2 9-9 14-8z"/>
+        </svg>
+      </div>
+      <span class="brand-name">Cucurbit<span class="brand-dot"> Disease Detector</span></span>
+    </a>
+    <div class="topbar-sep"></div>
+    <div class="status-badge" id="status-pill">
+      <div class="pulse-ring" id="pulse-ring"></div>
+      <span id="status-text">Connecting…</span>
+    </div>
+  </div>
+</nav>
+
+<div class="wrapper">
+  <div class="hero">
+    <div>
+      <div class="hero-eyebrow">
+        <span class="dot"></span>
+        AI-Powered Plant Pathology
+      </div>
+      <h1>DETECT<br/><span class="accent">DISEASE.</span><br/>SAVE CROPS.</h1>
+      <p class="hero-desc">Upload a cucurbit leaf image and receive an instant AI diagnosis — powered by our EfficientNetV2-S + SE-Block + Vision Transformer fusion model trained on 8 disease classes.</p>
+    </div>
+    <div class="hero-tags">
+      <div class="model-tag"><span class="ti">⚡</span> EfficientNetV2-S</div>
+      <div class="model-tag"><span class="ti">🔁</span> SE-Block Attention</div>
+      <div class="model-tag"><span class="ti">👁️</span> ViT Transformer</div>
+      <div class="model-tag"><span class="ti">🏷️</span> 8 Disease Classes</div>
+    </div>
+  </div>
+</div>
+
+<main class="wrapper">
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon">📷</div>
+      <div>
+        <div class="card-title">Upload Leaf Image</div>
+        <div class="card-sub">Drag &amp; drop or click to select a file</div>
+      </div>
+    </div>
+
+    <div id="drop-zone" role="button" tabindex="0" aria-label="Upload leaf image">
+      <div class="upload-icon">🌿</div>
+      <h3>Drop your leaf image here</h3>
+      <p>or <strong>browse from your device</strong><br/>
+      Supports Gourd &amp; Pumpkin leaves — healthy or diseased</p>
+      <div class="fmt-row">
+        <span class="fmt-chip">PNG</span><span class="fmt-chip">JPG</span>
+        <span class="fmt-chip">JPEG</span><span class="fmt-chip">WEBP</span><span class="fmt-chip">BMP</span>
+      </div>
+    </div>
+    <input type="file" id="file-input" accept=".png,.jpg,.jpeg,.webp,.bmp"/>
+
+    <div id="preview-wrap">
+      <img id="preview-img" src="" alt="Leaf preview"/>
+      <div class="file-meta">
+        <span id="file-name">—</span>
+        <span id="file-size">—</span>
+      </div>
+    </div>
+
+    <div id="error-box"></div>
+
+    <button id="analyse-btn" disabled>
+      <span class="spinner" id="spinner"></span>
+      🔬 ANALYSE LEAF DISEASE
+    </button>
+    <button id="reset-btn">↩ Upload Another Image</button>
+  </div>
+
+  <div class="card" id="results">
+    <div class="card-header">
+      <div class="card-icon">🧬</div>
+      <div>
+        <div class="card-title">Diagnosis Report</div>
+        <div class="card-sub">AI analysis complete</div>
+      </div>
+    </div>
+
+    <div class="dx-banner">
+      <div class="dx-banner-bg"></div>
+      <div class="dx-top">
+        <div class="dx-emoji" id="res-icon">🌱</div>
+        <div class="dx-title-block">
+          <div class="dx-label">Predicted Condition</div>
+          <div class="dx-name" id="res-name">—</div>
+          <div class="dx-raw" id="res-crop">—</div>
+        </div>
+        <div class="dx-chips">
+          <span class="dx-chip chip-crop-gourd" id="res-crop-tag">—</span>
+          <span class="dx-chip chip-severity" id="res-badge">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="conf-block">
+      <div class="conf-header">
+        <span class="conf-label-txt">Model Confidence</span>
+        <span class="conf-number" id="res-conf">—</span>
+      </div>
+      <div class="conf-track"><div class="conf-fill" id="res-bar"></div></div>
+    </div>
+
+    <div class="hr"></div>
+
+    <div class="tile-grid">
+      <div class="tile">
+        <div class="tile-label"><div class="tile-label-icon">⚠️</div>Severity Level</div>
+        <div class="tile-value" id="res-severity">—</div>
+      </div>
+      <div class="tile">
+        <div class="tile-label"><div class="tile-label-icon">🔬</div>Condition Details</div>
+        <div class="tile-value" id="res-desc">—</div>
+      </div>
+      <div class="tile full">
+        <div class="tile-label"><div class="tile-label-icon">💊</div>Recommended Treatment</div>
+        <div class="tile-value" id="res-treatment">—</div>
+      </div>
+    </div>
+
+    <div class="hr"></div>
+
+    <div class="top5-header">
+      <div class="top5-title">Top 5 Predictions</div>
+      <span class="top5-sub">Ranked by confidence</span>
+    </div>
+    <div class="top5-list" id="top5-list"></div>
+  </div>
+</main>
+
+<footer>
+  🌿 <strong>CucurbitAI</strong> — Leaf Disease Detection &nbsp;·&nbsp;
+  EfficientNetV2-S + SE-Block + ViT Fusion &nbsp;·&nbsp; Flask &amp; PyTorch
+</footer>
+
+<script>
+const ICONS={Healthy:'✅',Alternaria_Blight:'🟤',Anthracnose:'⚫',Downy_Mildew:'🌧️',Mosaic_Virus:'🔴',Powdery_Mildew:'🌫️'};
+function getIcon(raw){for(const k in ICONS)if(raw.includes(k))return ICONS[k];return '🌿';}
+
+async function checkStatus(){
+  try{
+    const r=await fetch('/status');const d=await r.json();
+    const ring=document.getElementById('pulse-ring');
+    const txt=document.getElementById('status-text');
+    if(d.model_loaded){ring.classList.add('live');txt.textContent=`Model Ready · ${d.device.toUpperCase()} · ${d.num_classes} Classes`;}
+    else txt.textContent='Model Not Loaded — Check Console';
+  }catch{document.getElementById('status-text').textContent='⚠ Server Offline';}
+}
+checkStatus();
+
+const dropZone=document.getElementById('drop-zone'),fileInput=document.getElementById('file-input'),
+  previewWrap=document.getElementById('preview-wrap'),previewImg=document.getElementById('preview-img'),
+  fileName=document.getElementById('file-name'),fileSize=document.getElementById('file-size'),
+  analyseBtn=document.getElementById('analyse-btn'),resetBtn=document.getElementById('reset-btn'),
+  spinner=document.getElementById('spinner'),errorBox=document.getElementById('error-box'),
+  results=document.getElementById('results');
+let selectedFile=null;
+
+function fmtSize(b){if(b<1024)return b+' B';if(b<1048576)return (b/1024).toFixed(1)+' KB';return (b/1048576).toFixed(1)+' MB';}
+
+function setFile(f){
+  if(!f)return;selectedFile=f;
+  previewImg.src=URL.createObjectURL(f);previewWrap.style.display='block';
+  fileName.textContent=f.name;fileSize.textContent=fmtSize(f.size);
+  analyseBtn.disabled=false;errorBox.style.display='none';
+  results.style.display='none';resetBtn.style.display='none';
+}
+
+dropZone.addEventListener('click',()=>fileInput.click());
+dropZone.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' ')fileInput.click();});
+dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.add('drag-over');});
+dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop',e=>{e.preventDefault();dropZone.classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f)setFile(f);});
+fileInput.addEventListener('change',()=>{if(fileInput.files[0])setFile(fileInput.files[0]);});
+
+resetBtn.addEventListener('click',()=>{
+  selectedFile=null;fileInput.value='';previewWrap.style.display='none';
+  analyseBtn.disabled=true;results.style.display='none';
+  resetBtn.style.display='none';errorBox.style.display='none';
+  document.getElementById('res-bar').style.width='0';
+});
+
+function renderResults(d){
+  document.getElementById('res-name').textContent=d.predicted;
+  document.getElementById('res-crop').textContent=d.raw_class.replace(/_/g,' ');
+  document.getElementById('res-severity').textContent=d.severity;
+  document.getElementById('res-desc').textContent=d.description;
+  document.getElementById('res-treatment').textContent=d.treatment;
+
+  const iconEl=document.getElementById('res-icon');
+  iconEl.textContent=getIcon(d.raw_class);
+  iconEl.style.background=d.raw_class.includes('Healthy')
+    ?'linear-gradient(135deg,#dcfce7,#bbf7d0)'
+    :'linear-gradient(135deg,#fff7ed,#fed7aa)';
+
+  const cropTag=document.getElementById('res-crop-tag');
+  cropTag.textContent='🌱 '+d.crop;
+  cropTag.className='dx-chip '+(d.crop==='Gourd'?'chip-crop-gourd':'chip-crop-pumpkin');
+
+  const badge=document.getElementById('res-badge');
+  badge.textContent='⚠ '+d.severity;
+  badge.style.color=d.color;badge.style.borderColor=d.color;badge.style.background=d.color+'18';
+
+  const confEl=document.getElementById('res-conf'),barEl=document.getElementById('res-bar');
+  confEl.textContent=d.confidence.toFixed(1)+'%';confEl.style.color=d.color;
+  barEl.style.background=`linear-gradient(90deg,${d.color}99,${d.color})`;
+  barEl.style.boxShadow=`0 0 16px ${d.color}44`;
+  setTimeout(()=>{barEl.style.width=d.confidence+'%';},80);
+
+  const list=document.getElementById('top5-list');list.innerHTML='';
+  const rCls=['r1','r2','r3','rn','rn'],rLbl=['🥇','🥈','🥉','4','5'];
+  d.top5.forEach((item,i)=>{
+    const row=document.createElement('div');
+    row.className='top5-row'+(i===0?' rank1':'');
+    row.innerHTML=`<span class="rank-num ${rCls[i]}">${rLbl[i]}</span>
+      <span class="t5-name">${item.class}</span>
+      <div class="t5-bar"><div class="t5-fill" style="width:${item.confidence}%"></div></div>
+      <span class="t5-pct">${item.confidence.toFixed(1)}%</span>`;
+    list.appendChild(row);
+  });
+
+  results.style.display='block';
+  setTimeout(()=>results.scrollIntoView({behavior:'smooth',block:'start'}),120);
+}
+
+analyseBtn.addEventListener('click',async()=>{
+  if(!selectedFile)return;
+  analyseBtn.disabled=true;spinner.style.display='inline-block';
+  errorBox.style.display='none';results.style.display='none';
+  const fd=new FormData();fd.append('file',selectedFile);
+  try{
+    const r=await fetch('/predict',{method:'POST',body:fd});const d=await r.json();
+    if(!r.ok||d.error){errorBox.textContent='⚠ '+(d.error||'Server error');errorBox.style.display='flex';}
+    else{renderResults(d);resetBtn.style.display='block';}
+  }catch(e){errorBox.textContent='⚠ Network error: '+e.message;errorBox.style.display='flex';}
+  finally{analyseBtn.disabled=false;spinner.style.display='none';}
+});
+</script>
+</body>
+</html>
